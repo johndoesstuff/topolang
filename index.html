@@ -1,38 +1,116 @@
 <head>
 	<title>Topolang - Topology Generator</title>
 	<style>
+		body {
+			margin: 0;
+			padding: 20px;
+			font-family: monospace;
+			background: #f5f5f0;
+			color: #222;
+		}
+
+		h1 {
+			font-size: 1.1rem;
+			font-weight: bold;
+			margin-bottom: 16px;
+			letter-spacing: 0.05em;
+		}
+
+		#controls {
+			display: flex;
+			gap: 8px;
+			margin-bottom: 16px;
+		}
+
 		.a {
-			background-color: white;
+			background: #e8e4dc;
 		}
+
 		.b {
-			background-color: black;
+			background: #2a2a2a;
+			display: grid;
 		}
+
 		.box {
-			min-height: 1em;
+			min-height: 8px;
 		}
+
 		.circle {
 			aspect-ratio: 1 / 1;
 			border-radius: 100%;
 		}
+
 		span {
 			display: flex;
 			flex-wrap: wrap;
 
-			width: 1em;
+			width: 8px;
 			min-width: max-content;
 			align-items: center;
 			justify-content: center;
 
-			margin: 5px;
+			margin: 2.5px;
+			padding: 2.5px;
 
 			box-sizing: border-box;
 			vertical-align: middle;
+
+			transition: 0.2s;
+		}
+
+		span.a:hover:not(:has(*:hover)) {
+			background-color: #d44639;
+		}
+
+		span.b:hover:not(:has(*:hover)) {
+			background-color: #8f2814;
+		}
+
+		#in {
+			flex: 1;
+			padding: 8px 10px;
+			font-family: monospace;
+			font-size: 0.9rem;
+			border: 1px solid #ccc;
+			background: #fff;
+			outline: none;
+		}
+
+		#in:focus {
+			border-color: #888;
+		}
+
+		.textf {
+			padding: 8px 18px;
+			font-family: monospace;
+			font-size: 0.9rem;
+			background: #222;
+			color: #fff;
+			border: none;
+			cursor: pointer;
+		}
+		.outf {
+			margin-bottom: 16px;
+		}
+
+		#gen:hover {
+			background: #444;
+		}
+
+		#container {
+			margin-top: 32px;
 		}
 	</style>
 </head>
 <body>
-	<input type="text" id="in" value="{{{}}, {{{}}, {{{}}, {{{{{{{}, {}}, {}, {}}}, {{{}, {}}}}}, {{{{{}, {}}, {}}}, {{{}, {}}}}}}}}"></input>
-	<button onclick="generate()">Generate</button>
+	<h1>Topolang Visualizer</h1>
+	<div id="controls">
+		<input type="text" id="in" placeholder="\x.x" value="\f.(\x.f(x x) (\x.f(x x)))"></input>
+		<button onclick="generate()" class="textf" id="gen">Convert</button>
+	</div>
+	<div id="dbj" class="textf outf">[ DeBruijn Index Sets ]</div>
+	<div id="slc" class="textf outf">[ Expanded Sets ]</div>
 	<div id="container"></div>
+	<script src="build/ulc2toposet.js"></script>
 	<script src="topology_generator.js"></script>
 </body>
