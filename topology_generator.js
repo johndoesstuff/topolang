@@ -20,6 +20,7 @@ function generateNodes(set, depth) {
 	let div = document.createElement("span");
 	div.innerText = "";
 	div.classList.add((depth % 2 == 0) ? "a" : "b");
+	div.classList.add("box");
 	for (let i = 0; i < set.length; i++) {
 		div.appendChild(generateNodes(set[i], depth + 1));
 	}
@@ -27,5 +28,7 @@ function generateNodes(set, depth) {
 }
 
 function generate() {
-	document.getElementById("container").appendChild(generateNodes(parseSet(document.getElementById("in").value), 1))
+	let container = document.getElementById("container");
+	container.innerHTML = "";
+	container.appendChild(generateNodes(parseSet(document.getElementById("in").value), 1));
 }

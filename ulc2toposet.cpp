@@ -1,28 +1,27 @@
 // This program is part of the larger project Topolang which aims to map 2d
 // topologies to program structures. This layer acts as an informal proof that
-// Set Lambda Calculus (and by extension Topolang) is turing complete. This is
-// achieved by mapping the set of all Unsigned Lambda Calculus expressions to
-// corresponding sets in Set Lambda Calculus.
+// Set Lambda Calculus (and by extension Topolang) is turing complete and as a
+// tool for converting lambda calculus expressions to Set Lambda Calculus. This
+// is achieved by mapping the set of all Unsigned Lambda Calculus expressions
+// to corresponding sets in Set Lambda Calculus.
 //
 // For reference the reduction rules of Set Lambda Calculus are as follows:
 //
-// E-Parallel : if t_1 -> t_1' and t_2 -> t_2'
-//              then {t_1, t_2} -> {t_1', t_2'}
+// Reduce all leaf sets using D-ary Huffman Encoding:
 //
-// E-Lambda   : {λ, v} -> λv
+// {{}}                   -> λ
+// {{{}, {}}}             -> 1
+// {{{}, {}}, {}}         -> 2
+// {{{}, {}}, {}, {}}     -> 3
+// {{{}, {}}, {}, {}, ..} -> n
 //
-// E-Promote  : {⊕, t^n} -> t^(n+1)
-// E-Demote   : {⊖, t^n} -> t^(n-1)
+// This reduces to an arbitrarily nested set of lambdas and numbers. To extract
+// ordering the pattern of
 //
-// E-Consume  : if n > ↑m
-//              then {λv^n, t^m} -> Λv^n
-//              and δv := t^m
+// {{n_1}, n_2}
 //
-// E-App      : if n > ↑m
-//              then {Λv^n, t^m} -> δv[v |-> t^m]
-//
-// E-Ambig    : if t_1 -> t_1'
-//              then {t_1, t_2} -> {t_1', t_2}
+// implies an ordering of n_1 n_2. From this we can reconstruct a De Bruijn
+// index lambda calculus.
 
 #include <iostream>
 #include <string>
@@ -287,6 +286,65 @@ struct ULC_converter {
 		std::vector<std::string_view> captured;
 		return convert_subset(root_.get(), 0, captured);
 	}
+	
+	SLC_set convert_dbj() {
+		std::vector<std::string_view> captured;
+		return convert_subset_dbj(root_.get(), 0, captured);
+	}
+
+	SLC_set convert_subset_dbj(const ULC_AST_node* node, int lambda_depth, std::vector<std::string_view> captured) {
+		SLC_set ret_set;
+		if (!node) return ret_set;
+		switch (node->type) {
+			case ULC_AST_type::DEFINITION: {
+					ret_set.elements.insert("λ");
+					captured.insert(captured.begin(), node->right.get()->value.text);
+					if (node->left.get()->type == ULC_AST_type::ATOMIC) {
+						// ret_set.elements.insert(node->left.get()->value.text);
+						std::string_view var_name = node->left.get()->value.text;
+						auto it = std::find(captured.begin(), captured.end(), var_name);
+						if (it == captured.end()) throw std::runtime_error("Unknown variable");
+						int position = std::distance(captured.begin(), it) + 1;
+						ret_set.elements.insert(position);
+					} else {
+						auto sub_set = convert_subset_dbj(node->left.get(), lambda_depth + 1, captured);
+						ret_set.elements.insert(std::make_shared<SLC_set>(std::move(sub_set)));
+					}
+					captured.erase(captured.begin());
+				}
+				return ret_set;
+				break;
+			case ULC_AST_type::APPLICATION: {
+					SLC_set promote_set;
+					if (node->left.get()->type == ULC_AST_type::ATOMIC) {
+						std::string_view var_name = node->left.get()->value.text;
+						auto it = std::find(captured.begin(), captured.end(), var_name);
+						if (it == captured.end()) throw std::runtime_error("Unknown variable");
+						int position = std::distance(captured.begin(), it) + 1;
+						promote_set.elements.insert(position);
+					} else {
+						auto sub_set = convert_subset_dbj(node->left.get(), lambda_depth, captured);
+						promote_set.elements.insert(std::make_shared<SLC_set>(std::move(sub_set)));
+					}
+					ret_set.elements.insert(std::make_shared<SLC_set>(std::move(promote_set)));
+					if (node->right.get()->type == ULC_AST_type::ATOMIC) {
+						std::string_view var_name = node->right.get()->value.text;
+						auto it = std::find(captured.begin(), captured.end(), var_name);
+						if (it == captured.end()) throw std::runtime_error("Unknown variable");
+						int position = std::distance(captured.begin(), it) + 1;
+						ret_set.elements.insert(position);
+					} else {
+						auto sub_set = convert_subset_dbj(node->right.get(), lambda_depth, captured);
+						ret_set.elements.insert(std::make_shared<SLC_set>(std::move(sub_set)));
+					}
+				}
+				return ret_set;
+				break;
+			case ULC_AST_type::GROUP:
+				return convert_subset_dbj(node->right.get(), lambda_depth, captured);
+		}
+		return ret_set;
+	}
 
 	SLC_set make_number(int number) {
 		// 1 = {{{},{}}}
@@ -367,18 +425,19 @@ struct ULC_converter {
 };
 
 void display(std::string_view str) {
-	std::cout << str << std::endl;
+	std::cout << "λ: " << str << std::endl;
 	ULC_converter converter(str);
-	std::cout << converter.convert().to_string() << "\n\n";
+	std::cout << "De Bruijn: " << converter.convert_dbj().to_string() << std::endl;
+	std::cout << "SLC: " << converter.convert().to_string() << std::endl << std::endl;
 }
 
 int main() {
-	std::cout << "Identity:\n";
+	std::cout << "Identity:" << std::endl;
 	display("\\x.x");
-	std::cout << "K-Combinator:\n";
+	std::cout << "K-Combinator:" << std::endl;
 	display("\\x.\\y.x");
-	std::cout << "S-Combinator:\n";
+	std::cout << "S-Combinator:" << std::endl;
 	display("\\x.\\y.\\z.((x z)(y z))");
-	std::cout << "Fixed-Point Combinator:\n";
+	std::cout << "Fixed-Point Combinator:" << std::endl;
 	display("(\\f.(\\x.f (x x)) (\\x.f (x x)))");
 }
