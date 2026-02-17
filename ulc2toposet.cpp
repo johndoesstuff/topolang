@@ -373,13 +373,6 @@ void display(std::string_view str) {
 }
 
 int main() {
-	ULC_lexer lexer("(\\f.(\\x.f (x x)) (\\x.f (x x))) g");
-	//ULC_lexer lexer("(x)");
-	//ULC_parser parser(lexer);
-	//auto root = parser.parse();
-	//ulc2slc(root.get());
-	//std::cout << std::endl;
-
 	std::cout << "Identity:\n";
 	display("\\x.x");
 	std::cout << "K-Combinator:\n";

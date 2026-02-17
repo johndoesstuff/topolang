@@ -1,0 +1,36 @@
+<head>
+	<title>Topolang - Topology Generator</title>
+	<style>
+		.a {
+			background-color: white;
+		}
+		.b {
+			background-color: black;
+		}
+		span {
+			display: flex;
+			flex-wrap: wrap;
+
+			aspect-ratio: 1 / 1;
+
+			width: 1em;
+			min-width: max-content;
+			border-radius: 100vw;
+			margin: 5px;
+			align-items: center;
+			justify-content: center;
+
+			margin: 5px;
+			border: 1px solid rgba(128, 128, 128, 0.3);
+
+			box-sizing: border-box;
+			vertical-align: middle;
+		}
+	</style>
+</head>
+<body>
+	<input type="text" id="in" value="{{{}}, {{{}}, {{{}}, {{{{{{{}, {}}, {}, {}}}, {{{}, {}}}}}, {{{{{}, {}}, {}}}, {{{}, {}}}}}}}}"></input>
+	<button onclick="generate()">Generate</button>
+	<div id="container"></div>
+	<script src="topology_generator.js"></script>
+</body>
