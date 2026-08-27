@@ -88,6 +88,21 @@ function thaw(node) {
 	node.style.height = "";
 }
 
+// scale the container so a topology of the given natural size fits the viewport
+let lastSize = [0, 0];
+function fit(w, h) {
+	lastSize = [w, h];
+	const container = document.getElementById("container");
+	const availW = container.clientWidth;
+	const availH = window.innerHeight - container.offsetTop - 20;
+	const s = Math.min(1, availW / w, availH / h);
+	container.style.transform = "scale(" + s + ")";
+	// the layout box doesn't shrink with the transform; keep the page from
+	// scrolling by reserving only the scaled height
+	container.style.height = (h * s) + "px";
+}
+window.addEventListener("resize", () => { if (lastSize[0]) fit(...lastSize); });
+
 // nodes created / orphaned during the current render, animated afterwards
 let entering = [];
 let leaving = [];
@@ -109,6 +124,7 @@ function render(slc) {
 	added.forEach((n) => n.classList.remove("enter"));
 	removed.forEach((n) => n.style.display = "none");
 	const sizes = added.map((n) => [n.offsetWidth, n.offsetHeight]);
+	fit(root.offsetWidth, root.offsetHeight);
 	added.forEach((n) => n.classList.add("enter"));
 	removed.forEach((n) => n.style.display = "");
 
