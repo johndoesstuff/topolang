@@ -108,6 +108,18 @@
 			margin-bottom: 16px;
 		}
 
+		#dbj {
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			cursor: pointer;
+		}
+
+		#dbj.expanded {
+			white-space: normal;
+			word-break: break-all;
+		}
+
 		button:hover {
 			background: #444;
 		}
@@ -125,7 +137,7 @@
 		<input type="text" id="in" placeholder="\x.x" value="\f.((\x.f(x x)) (\x.f(x x)))"></input>
 		<button onclick="generate()" class="textf" id="gen">Compile Lambda Calculus</button>
 	</div>
-	<div id="dbj" class="textf outf">[ DeBruijn Index Sets ]</div>
+	<div id="dbj" class="textf outf" onclick="this.classList.toggle('expanded')" title="click to expand">[ DeBruijn Index Sets ]</div>
 	<div class="controls">
 		<input type="text" id="slc" value="[ Expanded Sets ]"></input>
 		<button onclick="render(document.getElementById('slc').value)" class="textf" id="red">Display</button>
