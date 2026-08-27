@@ -1,6 +1,9 @@
+#include <algorithm>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <stack>
+#include <stdexcept>
 #include <string>
 #include <variant>
 #include <vector>
@@ -56,88 +59,86 @@ struct toposet_parser {
         return false;
     }
 
-    // the tokenization process of a topology involves mapping the D-ary
-    // huffman encodings to their string or int counterparts
-    SLC_set tokenize(SLC_set &root) {
-        if (!valid_token(root)) {
-            for (auto &item : root.elements) {
-                auto &set_item = std::get<std::shared_ptr<SLC_set>>(item);
-                tokenize(*set_item.get());
-            }
-        } else {
-            // determine if valid huffman walk exists for token: first we must
-            // get its "signature" as a vector
-            std::vector<int> sig;
-            auto t = root;
-            while (t.elements.size() > 0) {
-                sig.push_back(static_cast<int>(t.elements.size()));
-                auto current = t;
-                t = *std::get<std::shared_ptr<SLC_set>>(*(t.elements.begin()));
-                for (auto item : current.elements) {
-                    auto set_item = std::get<std::shared_ptr<SLC_set>>(item);
-                    if (set_item->elements.size() > 0) {
-                        t = *set_item;
-                    }
-                }
-            }
-            std::reverse(sig.begin(), sig.end());
+	/*
+	 * The tokenization process involves mapping the D-ary huffman encodings to
+	 * their string or int counterparts.
+     *
+	 * A token is a single-sided chain of nested sets, e.g. {{{}, {}}, {}, {}}.
+	 * Its "signature" is the size of each set along that chain, read from the
+	 * innermost set outwards. Each size selects a child of the huffman tree
+	 * ({{}} -> 1 -> λ, {{}, {}} -> 2 -> ℕ, {{}, {}, {}} -> 3 -> ops);
+	 */
+    SLC_set tokenize(const SLC_set &root) {
+        SLC_element tok = tokenize_r(root);
+        if (auto *s = std::get_if<std::shared_ptr<SLC_set>>(&tok)) {
+            return **s;
 		}
-        return root;
-    }
-    /*SLC_set tokenize(SLC_set root) {
+        // the whole topology was a single token
         SLC_set res;
-        res.elements.insert(tokenize_r(root));
+        res.elements.insert(tok);
         return res;
     }
-    SLC_element tokenize_r(SLC_set root) {
-        // determine is set is valid to be a token (single sided recursion)
-        bool valid = valid_token(root);
-        if (valid) {
-            // determine if valid huffman walk exists for token: first we must
-            // get its "signature" as a vector
-            std::vector<int> sig;
-            auto t = root;
-            while (t.elements.size() > 0) {
-                sig.push_back(static_cast<int>(t.elements.size()));
-                auto current = t;
-                t = *std::get<std::shared_ptr<SLC_set>>(*(t.elements.begin()));
-                for (auto item : current.elements) {
-                    auto set_item = std::get<std::shared_ptr<SLC_set>>(item);
-                    if (set_item->elements.size() > 0) {
-                        t = *set_item;
-                    }
-                }
+
+    // signature of a valid token, innermost set first
+    std::vector<int> signature(const SLC_set &root) {
+        std::vector<int> sig;
+        const SLC_set *t = &root;
+        while (t->elements.size() > 0) {
+            sig.push_back(static_cast<int>(t->elements.size()));
+            const SLC_set *next = nullptr;
+            for (const auto &item : t->elements) {
+                const auto &set_item = std::get<std::shared_ptr<SLC_set>>(item);
+                if (set_item->elements.size() > 0)
+                    next = set_item.get();
             }
-            std::reverse(sig.begin(), sig.end());
-            // determine if signature is a valid walk of the huffman tree
-            auto tree = encoding_tree();
-            SLC_element result;
-            for (int i = 0; i < sig.size(); i++) {
-                int num = sig[i];
-                if (std::holds_alternative<std::vector<huffman_node>>(
-                        tree.data) &&
-                    valid) {
-                    auto vec = std::get<std::vector<huffman_node>>(tree.data);
-                    if (num < vec.size()) {
-                        tree = vec[num];
-                    } else {
-                        valid = false;
-                    }
-                } else if (std::holds_alternative<natural_numbers>(tree.data) &&
-                           i == sig.size() - 1 && valid) {
-                    return std::get<natural_numbers>(tree.data)[num];
-                } else if (std::holds_alternative<std::string>(tree.data) &&
-                           i == sig.size() - 1 && valid) {
-                    return std::get<std::string>(tree.data);
+            if (!next)
+                break;
+            t = next;
+        }
+        std::reverse(sig.begin(), sig.end());
+        return sig;
+    }
+
+	// walks the huffman tree with the signature
+    std::optional<SLC_element> walk(const std::vector<int> &sig) {
+        const huffman_node *tree = &encoding_tree();
+        for (size_t i = 0; i < sig.size(); i++) {
+            int num = sig[i];
+            bool last = i == sig.size() - 1;
+            if (std::holds_alternative<huffman_node::node_list>(tree->data)) {
+                const auto &vec = std::get<huffman_node::node_list>(tree->data);
+                if (num < 1 || static_cast<size_t>(num) > vec.size())
+                    return std::nullopt;
+                tree = &vec[num - 1];
+                // string leave dont consume any more sets
+                if (std::holds_alternative<std::string>(tree->data)) {
+                    if (!last)
+                        return std::nullopt;
+                    return SLC_element(
+                        std::string_view(std::get<std::string>(tree->data)));
                 }
+            } else if (std::holds_alternative<natural_numbers>(tree->data)) {
+                if (!last)
+                    return std::nullopt;
+                return SLC_element(std::get<natural_numbers>(tree->data)[num]);
             }
         }
-        for (auto item : root.elements) {
-            auto set_item = std::get<std::shared_ptr<SLC_set>>(item);
-            item = tokenize_r(*set_item.get());
+        return std::nullopt;
+    }
+
+    SLC_element tokenize_r(const SLC_set &root) {
+        if (valid_token(root)) {
+            if (auto tok = walk(signature(root)))
+                return *tok;
         }
-        return root;
-    }*/
+        // try to tokenize the children instead :P
+        SLC_set res;
+        for (const auto &item : root.elements) {
+            const auto &set_item = std::get<std::shared_ptr<SLC_set>>(item);
+            res.elements.insert(tokenize_r(*set_item));
+        }
+        return std::make_shared<SLC_set>(std::move(res));
+    }
 };
 
 int main() {
@@ -161,6 +162,6 @@ int main() {
 
     auto parsed = parser.parse_toposet();
 
-    std::cout << parsed.to_string();
-    std::cout << parser.tokenize(parsed).to_string();
+    std::cout << parsed.to_string() << std::endl;
+    std::cout << parser.tokenize(parsed).to_string() << std::endl;
 }
