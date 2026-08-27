@@ -28,13 +28,29 @@ function generateNodes(set, depth) {
 	return div;
 }
 
-function generate() {
+function render(slc) {
 	let container = document.getElementById("container");
+	container.innerHTML = "";
+	container.appendChild(generateNodes(parseSet(slc), 1));
+}
+
+function generate() {
 	let inp = document.getElementById("in").value;
 	let dbj = Module.ulc2dbj(inp);
 	let slc = Module.ulc2slc(inp);
 	document.getElementById("dbj").innerText = dbj;
-	document.getElementById("slc").innerText = slc;
-	container.innerHTML = "";
-	container.appendChild(generateNodes(parseSet(slc), 1));
+	document.getElementById("slc").value = slc;
+	render(slc);
+}
+
+let Reducer = null;
+ReducerModule().then((m) => { Reducer = m; });
+
+function reduce() {
+	if (!Reducer) return;
+	let slc = document.getElementById("slc").value;
+	let next = Reducer.reduce_slc(slc);
+	document.getElementById("slc").value = next;
+	document.getElementById("dbj").innerText = Reducer.slc2dbj(next);
+	render(next);
 }
