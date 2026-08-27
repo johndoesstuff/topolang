@@ -101,7 +101,11 @@ function fit(w, h) {
 	// scrolling by reserving only the scaled height
 	container.style.height = (h * s) + "px";
 }
-window.addEventListener("resize", () => { if (lastSize[0]) fit(...lastSize); });
+function refit() { if (lastSize[0]) fit(...lastSize); }
+window.addEventListener("resize", refit);
+// the display sits below #dbj, so its available height changes whenever the
+// De Bruijn field expands, collapses, or rewraps
+new ResizeObserver(refit).observe(document.getElementById("dbj"));
 
 // nodes created / orphaned during the current render, animated afterwards
 let entering = [];
