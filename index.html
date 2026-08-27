@@ -56,7 +56,21 @@
 			box-sizing: border-box;
 			vertical-align: middle;
 
-			transition: 0.2s;
+			transition: 0.25s;
+		}
+
+		span.enter, span.leave {
+			transform: scale(0);
+			opacity: 0;
+			margin: 0;
+			padding: 0;
+			/* collapse the box itself so siblings slide rather than jump;
+			   !important overrides the pinned inline size */
+			width: 0 !important;
+			height: 0 !important;
+			min-width: 0;
+			min-height: 0;
+			overflow: hidden;
 		}
 
 		span.a:hover:not(:has(*:hover)) {
