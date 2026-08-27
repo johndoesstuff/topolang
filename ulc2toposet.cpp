@@ -34,7 +34,10 @@
 #include <vector>
 
 #include "slc_set.hpp"
+
+#ifdef __EMSCRIPTEN__
 #include <emscripten/bind.h>
+#endif
 
 enum class ULC_token_type {
     LAMBDA,
@@ -129,8 +132,8 @@ struct ULC_AST_node {
  */
 
 struct ULC_parser {
-    ULC_lexer lexer_;
-    ULC_parser(ULC_lexer lexer) : lexer_(lexer), token_id_(0) {
+    ULC_lexer &lexer_;
+    ULC_parser(ULC_lexer &lexer) : lexer_(lexer), token_id_(0) {
         tokens_.push_back(lexer_.next_token());
     }
     std::vector<ULC_token> tokens_;
@@ -361,7 +364,7 @@ struct ULC_converter {
     }
 
     SLC_set convert_subset(const ULC_AST_node *node, int lambda_depth,
-                           std::vector<std::string_view> captured) {
+                           std::vector<std::string_view> &captured) {
         SLC_set ret_set;
         if (!node)
             return ret_set;
@@ -479,7 +482,12 @@ std::string ulc2slc(std::string str) {
 }
 
 // emscripten bindings
+
+#ifdef __EMSCRIPTEN__
+
 EMSCRIPTEN_BINDINGS(toposet) {
     emscripten::function("ulc2dbj", &ulc2dbj);
     emscripten::function("ulc2slc", &ulc2slc);
 }
+
+#endif

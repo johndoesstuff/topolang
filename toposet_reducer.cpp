@@ -39,9 +39,105 @@ struct toposet_parser {
         return base;
     }
 
+    // only accepts untokenized toposets
+    bool valid_token(const SLC_set &s) {
+        int rec = 0;
+        for (auto item : s.elements) {
+            auto set_item = std::get<std::shared_ptr<SLC_set>>(item);
+            if (set_item->elements.size() > 0) {
+                rec++;
+                if (!valid_token(*set_item.get())) {
+                    return false;
+                }
+            }
+        }
+        if (rec <= 1)
+            return true;
+        return false;
+    }
+
     // the tokenization process of a topology involves mapping the D-ary
     // huffman encodings to their string or int counterparts
-    SLC_set tokenize() {}
+    SLC_set tokenize(SLC_set &root) {
+        if (!valid_token(root)) {
+            for (auto &item : root.elements) {
+                auto &set_item = std::get<std::shared_ptr<SLC_set>>(item);
+                tokenize(*set_item.get());
+            }
+        } else {
+            // determine if valid huffman walk exists for token: first we must
+            // get its "signature" as a vector
+            std::vector<int> sig;
+            auto t = root;
+            while (t.elements.size() > 0) {
+                sig.push_back(static_cast<int>(t.elements.size()));
+                auto current = t;
+                t = *std::get<std::shared_ptr<SLC_set>>(*(t.elements.begin()));
+                for (auto item : current.elements) {
+                    auto set_item = std::get<std::shared_ptr<SLC_set>>(item);
+                    if (set_item->elements.size() > 0) {
+                        t = *set_item;
+                    }
+                }
+            }
+            std::reverse(sig.begin(), sig.end());
+		}
+        return root;
+    }
+    /*SLC_set tokenize(SLC_set root) {
+        SLC_set res;
+        res.elements.insert(tokenize_r(root));
+        return res;
+    }
+    SLC_element tokenize_r(SLC_set root) {
+        // determine is set is valid to be a token (single sided recursion)
+        bool valid = valid_token(root);
+        if (valid) {
+            // determine if valid huffman walk exists for token: first we must
+            // get its "signature" as a vector
+            std::vector<int> sig;
+            auto t = root;
+            while (t.elements.size() > 0) {
+                sig.push_back(static_cast<int>(t.elements.size()));
+                auto current = t;
+                t = *std::get<std::shared_ptr<SLC_set>>(*(t.elements.begin()));
+                for (auto item : current.elements) {
+                    auto set_item = std::get<std::shared_ptr<SLC_set>>(item);
+                    if (set_item->elements.size() > 0) {
+                        t = *set_item;
+                    }
+                }
+            }
+            std::reverse(sig.begin(), sig.end());
+            // determine if signature is a valid walk of the huffman tree
+            auto tree = encoding_tree();
+            SLC_element result;
+            for (int i = 0; i < sig.size(); i++) {
+                int num = sig[i];
+                if (std::holds_alternative<std::vector<huffman_node>>(
+                        tree.data) &&
+                    valid) {
+                    auto vec = std::get<std::vector<huffman_node>>(tree.data);
+                    if (num < vec.size()) {
+                        tree = vec[num];
+                    } else {
+                        valid = false;
+                    }
+                } else if (std::holds_alternative<natural_numbers>(tree.data) &&
+                           i == sig.size() - 1 && valid) {
+                    return std::get<natural_numbers>(tree.data)[num];
+                } else if (std::holds_alternative<std::string>(tree.data) &&
+                           i == sig.size() - 1 && valid) {
+                    return std::get<std::string>(tree.data);
+                }
+            }
+        }
+        for (auto item : root.elements) {
+            auto set_item = std::get<std::shared_ptr<SLC_set>>(item);
+            item = tokenize_r(*set_item.get());
+        }
+        return root;
+    }*/
 };
 
 int main() {
@@ -62,5 +158,9 @@ int main() {
         "{{{}}, {{{}}, {{{{{{{}, {}}, {}}}, {{{}}, {{{}}, {{{}}, {{{{{}, {}}}, "
         "{{{{{}, {{}, {}}, {}}}, {{}, {{}, {}}}}}}, {{{{}, {}}, {}}}}}}}}}, "
         "{{{}, {}}}}}}");
-    std::cout << parser.parse_toposet().to_string();
+
+    auto parsed = parser.parse_toposet();
+
+    std::cout << parsed.to_string();
+    std::cout << parser.tokenize(parsed).to_string();
 }
