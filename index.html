@@ -125,6 +125,9 @@
 		}
 
 		#container {
+			display: flex;
+			justify-content: center;
+			align-items: flex-start;
 			margin-top: 32px;
 			transform-origin: top center;
 			transition: transform 0.25s, height 0.25s;
@@ -134,6 +137,18 @@
 <body>
 	<h1>Topolang Visualizer</h1>
 	<div class="controls">
+		<select class="textf" onchange="document.getElementById('in').value = this.value; generate()">
+			<option value="\f.((\x.f(x x)) (\x.f(x x)))">Y combinator</option>
+			<option value="(\x.x x) (\x.x x)">&Omega; combinator</option>
+			<option value="(\x.\y.\z.x z (y z)) (\x.\y.x) (\x.\y.x)">S K K = I</option>
+			<option value="(\n.\f.\x.f (n f x)) (\f.\x.f (f x))">SUCC 2 = 3</option>
+			<option value="(\m.\n.\f.m (n f)) (\f.\x.f (f x)) (\f.\x.f (f (f x)))">2 x 3 = 6</option>
+			<option value="(\m.\n.n m) (\f.\x.f (f x)) (\f.\x.f (f x))">2 ^ 2 = 4</option>
+			<option value="(\n.\f.\x.n (\g.\h.h (g f)) (\u.x) (\u.u)) (\f.\x.f (f x))">PRED 2 = 1</option>
+			<option value="(\p.p (\a.\b.b) (\a.\b.a)) (\a.\b.a)">NOT TRUE = FALSE</option>
+			<option value="(\p.p (\a.\b.a)) ((\a.\b.\f.f a b) (\x.x) (\y.\z.y))">FST (PAIR I K) = I</option>
+			<option value="(\f.(\x.f (x x)) (\x.f (x x))) (\f.\n.(\n.n (\x.\a.\b.b) (\a.\b.a)) n (\f.\x.f x) ((\m.\n.\f.m (n f)) n (f ((\n.\f.\x.n (\g.\h.h (g f)) (\u.x) (\u.u)) n)))) (\f.\x.f (f x))">2! = 2</option>
+		</select>
 		<input type="text" id="in" placeholder="\x.x" value="\f.((\x.f(x x)) (\x.f(x x)))"></input>
 		<button onclick="generate()" class="textf" id="gen">Compile Lambda Calculus</button>
 	</div>
