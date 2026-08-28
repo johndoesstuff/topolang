@@ -1,5 +1,9 @@
 <head>
 	<title>Topolang - Topology Generator</title>
+	<link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
+	<link rel="manifest" href="/favicon/site.webmanifest">
 	<style>
 		body {
 			margin: 0;
@@ -132,10 +136,29 @@
 			transform-origin: top center;
 			transition: transform 0.25s, height 0.25s;
 		}
+
+		.header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 16px;
+		}
+
+		.header h1 {
+			margin: 0;
+		}
+
+		#ivan {
+			height: 2.5rem;
+			width: auto;
+		}
 	</style>
 </head>
 <body>
-	<h1>Topolang Visualizer</h1>
+	<div class="header">
+		<h1>Topolang Visualizer</h1>
+		<img src="ivan.png" id="ivan">
+	</div>
 	<div class="controls">
 		<select class="textf" onchange="document.getElementById('in').value = this.value; generate(); document.getElementById('examples').value = 'Examples'" id="examples">
 			<option value="Examples" selected disabled hidden>Examples</option>
