@@ -91,7 +91,7 @@ example:
 
 ```
 make
-python -m http.server
+python -m http.server -d web
 ```
 
 ## Implementation
@@ -109,4 +109,4 @@ the implementation of the identity function. He also highlights that since
 programs are based only on contiguous blocks, you are given almost infinite
 creative freedom in how you want them to look.
 
-<img src="ivan.png" height="128" width="128">
+<img src="web/ivan.png" height="128" width="128">
