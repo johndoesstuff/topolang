@@ -6,6 +6,8 @@ blobs). This image topology is converted into arbitrarily nested sets and an
 intermediate representation I call *Set Lambda Calculus (SLC)* which allows for
 programs to be reduced/ran.
 
+### [Try it!](https://johndoesstuff.github.io/topolang/)
+
 ## Motivation
 
 The problem this language sets out to solve is very specific:
