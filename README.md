@@ -34,11 +34,12 @@ single sided chain of nested sets to a walk on a D-ary huffman encoding tree.
 This sounds like nonsense so let me try to explain:
 
 From the deepest point of any set we can attempt to perform a walk back up the
-set and count the number of sets at each later. That number of sets is the
+set and count the number of sets at each layer. That number of sets is the
 'signature' of our set, so for example:
 - `{{}}` has a signature of [1], as there is 1 set within the set
 - `{{}, {}}` has a signature of [2], as there are 2 sets
-- `{{{}, {}}}` has a signature of [2, 1] as there are 2 sets, enclosed by
+- `{{{}, {}}}` has a signature of [2, 1] as there are 2 sets, enclosed by 1
+larger set
 - `{{{}, {}}, {}}` has a signature of [2, 2] as there are 2 sets, enclosed by
 another set containing 2 sets
 
