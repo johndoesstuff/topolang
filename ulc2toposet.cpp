@@ -2,7 +2,7 @@
 // topologies to program structures. This layer acts as an informal proof that
 // Set Lambda Calculus (and by extension Topolang) is turing complete and as a
 // tool for converting lambda calculus expressions to Set Lambda Calculus. This
-// is achieved by mapping the set of all Unsigned Lambda Calculus expressions
+// is achieved by mapping the set of all Untyped Lambda Calculus expressions
 // to corresponding sets in Set Lambda Calculus.
 //
 // For reference the reduction rules of Set Lambda Calculus are as follows:

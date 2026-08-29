@@ -1,9 +1,14 @@
 # Topolang
 
+Topolang is an esoteric topology-based programming language where a program is
+just the *topology* of an image (which blobs are nested inside which other
+blobs). This image topology is converted into arbitrarily nested sets and an
+intermediate representation I call *Set Lambda Calculus (SLC)* which allows for
+programs to be reduced/ran.
+
 ## Motivation
 
-Topolang is an esoteric topology-based programming language. The problem this
-language sets out to solve is very specific:
+The problem this language sets out to solve is very specific:
 
 *How could you write code that could be read from any orientation, both
 forwards and backwards, and that doesn't use any special symbols?*
@@ -12,9 +17,9 @@ This constraint enforces that programs are structured as a set of contiguous
 unordered blocks. The nesting of these blocks is where the structure of the
 programming language is derived from. Because of this, we can rethink our
 language as being a completely set based language, since each block can contain
-any N number of contiguous blocks within it. For example `{{}, {}}` is the set
-representation of the "topology" of the symbol 8, since 8 is one contiguous
-block that contains 2 contiguous blocks within it.
+any N number of contiguous blocks within it. For example `{{}, {}}` could be
+the set representation of the "topology" of the symbol 8, as 8 is one
+contiguous blob of 'ink' encircling 2 smaller contiguous blobs of empty space.
 
 ## Sets to Tokens
 
@@ -31,19 +36,27 @@ This sounds like nonsense so let me try to explain:
 From the deepest point of any set we can attempt to perform a walk back up the
 set and count the number of sets at each later. That number of sets is the
 'signature' of our set, so for example:
--  `{{}}` has a signature of 1, as there is 1 set within the set
-- `{{}, {}}` has a signature of 2, as there are 2 sets
+- `{{}}` has a signature of [1], as there is 1 set within the set
+- `{{}, {}}` has a signature of [2], as there are 2 sets
 - `{{{}, {}}}` has a signature of [2, 1] as there are 2 sets, enclosed by
-another set
+- `{{{}, {}}, {}}` has a signature of [2, 2] as there are 2 sets, enclosed by
+another set containing 2 sets
 
 Obviously this doesn't work for sets of equal nesting such as `{{{}}, {{},
 {}}}` (do we consider this [1, 2] or [2, 2]?) so these are invalid tokens.
-Each number of these signatures represents the number of a choice to be
-made when walking down a D-ary huffman encoding tree. For the specifics of
-topolang [1] maps to λ and [2, n] maps to natural number n ([3] also will
-map to operators at some point but I haven't implemented this yet).
-This allows us to construct sets that look like this: ``` {λ, 1} ``` from
-sets that look like this: ``` {{{}}, {{{}, {}}}} ```
+Instead the tokenizer descends into them and they are evaluated as part of the
+program structure.  Each number of these signatures represents the number of a
+choice to be made when walking down a D-ary huffman encoding tree. For the
+specifics of topolang [1] maps to λ and [2, n] maps to natural number n ([3]
+also will map to operators at some point but I haven't implemented this
+yet).  This allows us to construct sets that look like this:
+```
+{λ, 1}
+```
+from sets that look like this:
+```
+{{{}}, {{{}, {}}}}
+```
 
 ## Sets as programs??
 
@@ -67,6 +80,19 @@ abstraction / lambda definition. To distinguish the ordering of
 applications, it is important the function is more deeply nested than the
 term. For example: `{{f}, x}`
 
+Another fun thing to note is the conversion of ULC to topolang serves as an
+informal proof of it's turing-completeness!
+
+## Try it yourself!
+
+To run locally you need only Emscripten and a way to host a webserver. For
+example:
+
+```
+make
+python -m http.server
+```
+
 ## Implementation
 
 The heart of this project is written in C++ because I like C++ and wanted
@@ -82,4 +108,4 @@ the implementation of the identity function. He also highlights that since
 programs are based only on contiguous blocks, you are given almost infinite
 creative freedom in how you want them to look.
 
-![Ivan](ivan.png)
+<img src="ivan.png" height="128" width="128">

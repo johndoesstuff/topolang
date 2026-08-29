@@ -115,7 +115,7 @@ struct toposet_parser {
                 if (num < 1 || static_cast<size_t>(num) > vec.size())
                     return std::nullopt;
                 tree = &vec[num - 1];
-                // string leave dont consume any more sets
+                // string leaves don't consume any more sets
                 if (std::holds_alternative<std::string>(tree->data)) {
                     if (!last)
                         return std::nullopt;
@@ -367,19 +367,6 @@ struct toposet_parser {
 };
 
 int main() {
-    std::vector<huffman_node> ops;
-    ops.emplace_back("+");
-    ops.emplace_back("-");
-    ops.emplace_back("*");
-    ops.emplace_back("/");
-
-    std::vector<huffman_node> root_children;
-    root_children.emplace_back("λ");
-    root_children.emplace_back(natural_numbers());
-    root_children.emplace_back(std::move(ops));
-
-    huffman_node huffman_tree(std::move(root_children));
-
     toposet_parser parser(
         "{{{}}, {{{}}, {{{{{{{}, {}}, {}}}, {{{}}, {{{}}, {{{}}, {{{{{}, {}}}, "
         "{{{{{}, {{}, {}}, {}}}, {{}, {{}, {}}}}}}, {{{{}, {}}, {}}}}}}}}}, "
