@@ -281,7 +281,7 @@ struct ULC_converter {
             return ret_set;
         switch (node->type) {
         case ULC_AST_type::DEFINITION: {
-            ret_set.elements.insert("λ");
+            ret_set.elements.insert(SLC_atom::lambda());
             captured.insert(captured.begin(), node->right.get()->value.text);
             if (node->left.get()->type == ULC_AST_type::ATOMIC) {
                 // ret_set.elements.insert(node->left.get()->value.text);
@@ -290,7 +290,7 @@ struct ULC_converter {
                 if (it == captured.end())
                     throw std::runtime_error("Unknown variable");
                 int position = std::distance(captured.begin(), it) + 1;
-                ret_set.elements.insert(position);
+                ret_set.elements.insert(SLC_atom::index(position));
             } else {
                 auto sub_set = convert_subset_dbj(node->left.get(),
                                                   lambda_depth + 1, captured);
@@ -309,7 +309,7 @@ struct ULC_converter {
                 if (it == captured.end())
                     throw std::runtime_error("Unknown variable");
                 int position = std::distance(captured.begin(), it) + 1;
-                promote_set.elements.insert(position);
+                promote_set.elements.insert(SLC_atom::index(position));
             } else {
                 auto sub_set = convert_subset_dbj(node->left.get(),
                                                   lambda_depth, captured);
@@ -324,7 +324,7 @@ struct ULC_converter {
                 if (it == captured.end())
                     throw std::runtime_error("Unknown variable");
                 int position = std::distance(captured.begin(), it) + 1;
-                ret_set.elements.insert(position);
+                ret_set.elements.insert(SLC_atom::index(position));
             } else {
                 auto sub_set = convert_subset_dbj(node->right.get(),
                                                   lambda_depth, captured);

@@ -119,17 +119,21 @@ struct toposet_parser {
                 if (std::holds_alternative<std::string>(tree->data)) {
                     if (!last)
                         return std::nullopt;
-                    return SLC_element(
-                        std::string_view(std::get<std::string>(tree->data)));
+                    std::string_view name = std::get<std::string>(tree->data);
+                    if (name == "λ")
+                        return SLC_element(SLC_atom::lambda());
+                    return SLC_element(SLC_atom::op(name));
                 }
             } else if (std::holds_alternative<index_numbers>(tree->data)) {
                 if (!last)
                     return std::nullopt;
-                return SLC_element(std::get<index_numbers>(tree->data)[num]);
+                return SLC_element(
+                    SLC_atom::index(std::get<index_numbers>(tree->data)[num]));
             } else if (std::holds_alternative<literal_numbers>(tree->data)) {
                 if (!last)
                     return std::nullopt;
-                return SLC_element(std::get<literal_numbers>(tree->data)[num]);
+                return SLC_element(SLC_atom::integer(
+                    std::get<literal_numbers>(tree->data)[num]));
             }
         }
         return std::nullopt;
@@ -186,21 +190,27 @@ struct toposet_parser {
         return false;
     }
 
+    // finds the root child holding number leaves of the given kind
+    template <typename NumberKind> static int number_child() {
+        const auto &root =
+            std::get<huffman_node::node_list>(encoding_tree().data);
+        for (size_t i = 0; i < root.size(); i++)
+            if (std::holds_alternative<NumberKind>(root[i].data))
+                return static_cast<int>(i) + 1;
+        throw std::runtime_error("Number kind missing from encoding tree");
+    }
+
     static SLC_element detokenize_r(const SLC_element &e) {
-        if (std::holds_alternative<int>(e)) {
-            // ℕ is child 2 of the root; the number is the outer size
+        if (const auto *atom = std::get_if<SLC_atom>(&e)) {
+            if (atom->type == SLC_atom_type::INDEX)
+                return build_chain({number_child<index_numbers>(), atom->ival});
+            if (atom->type == SLC_atom_type::INTEGER)
+                return build_chain(
+                    {number_child<literal_numbers>(), atom->ival});
+            std::string_view name =
+                atom->type == SLC_atom_type::LAMBDA ? "λ" : atom->sval;
             std::vector<int> sig;
-            const auto &root =
-                std::get<huffman_node::node_list>(encoding_tree().data);
-            for (size_t i = 0; i < root.size(); i++)
-                if (std::holds_alternative<index_numbers>(root[i].data))
-                    sig.push_back(static_cast<int>(i) + 1);
-            sig.push_back(std::get<int>(e));
-            return build_chain(sig);
-        }
-        if (std::holds_alternative<std::string_view>(e)) {
-            std::vector<int> sig;
-            if (!find_path(encoding_tree(), std::get<std::string_view>(e), sig))
+            if (!find_path(encoding_tree(), name, sig))
                 throw std::runtime_error("Unknown token");
             // find_path collects leaf-to-root; the chain wants the root's
             // choice innermost
@@ -244,9 +254,12 @@ struct toposet_parser {
 
     static term_view view(const SLC_element &e) {
         term_view v;
-        if (std::holds_alternative<int>(e)) {
-            v.kind = term_kind::VAR;
-            v.var = std::get<int>(e);
+        if (const auto *atom = std::get_if<SLC_atom>(&e)) {
+            if (atom->type == SLC_atom_type::INDEX) {
+                v.kind = term_kind::VAR;
+                v.var = atom->ival;
+            }
+            // operators dont do anything for now.. soon..
             return v;
         }
         if (!is_set(e) || as_set(e).elements.size() != 2)
@@ -254,8 +267,8 @@ struct toposet_parser {
         const auto &elems = as_set(e).elements;
         std::optional<SLC_element> lam, fn, other;
         for (const auto &item : elems) {
-            if (std::holds_alternative<std::string_view>(item) &&
-                std::get<std::string_view>(item) == "λ")
+            if (const auto *atom = std::get_if<SLC_atom>(&item);
+                atom && atom->type == SLC_atom_type::LAMBDA)
                 lam = item;
             else if (is_set(item) && as_set(item).elements.size() == 1)
                 fn = *as_set(item).elements.begin();
@@ -281,9 +294,11 @@ struct toposet_parser {
         term_view v = view(e);
         switch (v.kind) {
         case term_kind::VAR:
-            return v.var >= cutoff ? SLC_element(v.var + amount) : e;
+            return v.var >= cutoff
+                       ? SLC_element(SLC_atom::index(v.var + amount))
+                       : e;
         case term_kind::LAM:
-            return make_set({SLC_element(std::string_view("λ")),
+            return make_set({SLC_element(SLC_atom::lambda()),
                              shift(v.a, amount, cutoff + 1)});
         case term_kind::APP:
             return make_set({make_set({shift(v.a, amount, cutoff)}),
@@ -301,10 +316,10 @@ struct toposet_parser {
             if (v.var == depth)
                 return shift(arg, depth - 1, 1);
             if (v.var > depth)
-                return SLC_element(v.var - 1);
+                return SLC_element(SLC_atom::index(v.var - 1));
             return e;
         case term_kind::LAM:
-            return make_set({SLC_element(std::string_view("λ")),
+            return make_set({SLC_element(SLC_atom::lambda()),
                              substitute(v.a, arg, depth + 1)});
         case term_kind::APP:
             return make_set({make_set({substitute(v.a, arg, depth)}),
@@ -321,9 +336,8 @@ struct toposet_parser {
         switch (v.kind) {
         case term_kind::LAM: {
             SLC_element body = reduce_r(v.a, changed);
-            return changed
-                       ? make_set({SLC_element(std::string_view("λ")), body})
-                       : e;
+            return changed ? make_set({SLC_element(SLC_atom::lambda()), body})
+                           : e;
         }
         case term_kind::APP: {
             term_view f = view(v.a);
