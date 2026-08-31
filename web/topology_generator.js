@@ -165,6 +165,13 @@ function generate() {
 let Reducer = null;
 ReducerModule().then((m) => { Reducer = m; });
 
+function display() {
+	let slc = document.getElementById("slc").value;
+	if (Reducer)
+		document.getElementById("dbj").innerText = Reducer.slc2dbj(slc);
+	render(slc);
+}
+
 function reduce() {
 	if (!Reducer) return;
 	let slc = document.getElementById("slc").value;
