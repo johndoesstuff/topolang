@@ -122,10 +122,14 @@ struct toposet_parser {
                     return SLC_element(
                         std::string_view(std::get<std::string>(tree->data)));
                 }
-            } else if (std::holds_alternative<natural_numbers>(tree->data)) {
+            } else if (std::holds_alternative<index_numbers>(tree->data)) {
                 if (!last)
                     return std::nullopt;
-                return SLC_element(std::get<natural_numbers>(tree->data)[num]);
+                return SLC_element(std::get<index_numbers>(tree->data)[num]);
+            } else if (std::holds_alternative<literal_numbers>(tree->data)) {
+                if (!last)
+                    return std::nullopt;
+                return SLC_element(std::get<literal_numbers>(tree->data)[num]);
             }
         }
         return std::nullopt;
@@ -189,7 +193,7 @@ struct toposet_parser {
             const auto &root =
                 std::get<huffman_node::node_list>(encoding_tree().data);
             for (size_t i = 0; i < root.size(); i++)
-                if (std::holds_alternative<natural_numbers>(root[i].data))
+                if (std::holds_alternative<index_numbers>(root[i].data))
                     sig.push_back(static_cast<int>(i) + 1);
             sig.push_back(std::get<int>(e));
             return build_chain(sig);
