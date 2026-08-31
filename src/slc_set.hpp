@@ -23,7 +23,7 @@ struct SLC_set {
             if (std::holds_alternative<std::string_view>(elem)) {
                 s = std::string(std::get<std::string_view>(elem));
             } else if (std::holds_alternative<int>(elem)) {
-                s = std::to_string(std::get<int>(elem));
+                s = "$" + std::to_string(std::get<int>(elem));
             } else {
                 s = std::get<std::shared_ptr<SLC_set>>(elem)->to_string();
             }
