@@ -200,8 +200,25 @@ struct toposet_parser {
         throw std::runtime_error("Number kind missing from encoding tree");
     }
 
+    static bool is_partial_op(const SLC_atom &atom) {
+        return atom.type == SLC_atom_type::OPERATOR &&
+               !atom.oval.consumed.empty();
+    }
+
+    // partially applied ops have no set representation; they display as the
+    // original unreduced applications of the bare op to the args consumed so
+    // far
+    static SLC_element unreduced_form(const SLC_atom &atom) {
+        SLC_element cur = SLC_element(SLC_atom::op(atom.sval));
+        for (const auto &c : atom.oval.consumed)
+            cur = make_set({make_set({cur}), SLC_element(*c)});
+        return cur;
+    }
+
     static SLC_element detokenize_r(const SLC_element &e) {
         if (const auto *atom = std::get_if<SLC_atom>(&e)) {
+            if (is_partial_op(*atom))
+                return detokenize_r(unreduced_form(*atom));
             if (atom->type == SLC_atom_type::INDEX)
                 return build_chain({number_child<index_numbers>(), atom->ival});
             if (atom->type == SLC_atom_type::INTEGER)
@@ -224,6 +241,15 @@ struct toposet_parser {
     }
 
     SLC_set detokenize(const SLC_set &root) {
+        // a root holding just a partial op only got that wrapper because the
+        // term reduced to an atom; the rebuilt application replaces the root
+        // so the displayed topology matches the original unreduced term
+        if (root.elements.size() == 1) {
+            if (const auto *atom =
+                    std::get_if<SLC_atom>(&*root.elements.begin());
+                atom && is_partial_op(*atom))
+                return as_set(detokenize_r(unreduced_form(*atom)));
+        }
         return as_set(detokenize_r(std::make_shared<SLC_set>(root)));
     }
 
@@ -416,15 +442,30 @@ int main() {
     std::cout << parser.normalize(tokenized).to_string() << std::endl;
 }
 
+// partial op applications arent representable in sets so reduction state is
+// kept here because roundtripping would destroy op state information and reset
+// the consumed vector
+namespace {
+	SLC_set g_term;    // hold consumed state between steps
+	std::string g_raw; // last g_term display
+	bool g_loaded = false;
+}
+
 std::string slc2dbj(std::string str) {
+    if (g_loaded && str == g_raw)
+        return g_term.to_string();
     toposet_parser parser(str);
     return parser.tokenize(parser.parse_toposet()).to_string();
 }
 
 std::string reduce_slc(std::string str) {
     toposet_parser parser(str);
-    auto tokenized = parser.tokenize(parser.parse_toposet());
-    return parser.detokenize(parser.reduce(tokenized)).to_string();
+    if (!g_loaded || str != g_raw)
+        g_term = parser.tokenize(parser.parse_toposet());
+    g_term = parser.reduce(g_term);
+    g_raw = parser.detokenize(g_term).to_string();
+    g_loaded = true;
+    return g_raw;
 }
 
 // emscripten bindings

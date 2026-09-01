@@ -65,17 +65,34 @@ struct SLC_atom {
     }
 };
 
-// ordering
+// ordering (consumed args distinguish partially applied ops, so two partial
+// states never collapse into one set element)
+inline bool operator==(const SLC_atom &a, const SLC_atom &b) {
+    if (a.type != b.type || a.ival != b.ival || a.sval != b.sval)
+        return false;
+    const auto &ac = a.oval.consumed, &bc = b.oval.consumed;
+    if (ac.size() != bc.size())
+        return false;
+    for (size_t i = 0; i < ac.size(); i++)
+        if (!(*ac[i] == *bc[i]))
+            return false;
+    return true;
+}
+
 inline bool operator<(const SLC_atom &a, const SLC_atom &b) {
     if (a.type != b.type)
         return a.type < b.type;
     if (a.ival != b.ival)
         return a.ival < b.ival;
-    return a.sval < b.sval;
-}
-
-inline bool operator==(const SLC_atom &a, const SLC_atom &b) {
-    return a.type == b.type && a.ival == b.ival && a.sval == b.sval;
+    if (a.sval != b.sval)
+        return a.sval < b.sval;
+    const auto &ac = a.oval.consumed, &bc = b.oval.consumed;
+    if (ac.size() != bc.size())
+        return ac.size() < bc.size();
+    for (size_t i = 0; i < ac.size(); i++)
+        if (!(*ac[i] == *bc[i]))
+            return *ac[i] < *bc[i];
+    return false;
 }
 
 using SLC_element = std::variant<SLC_atom, std::shared_ptr<SLC_set>>;
