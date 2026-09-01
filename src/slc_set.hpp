@@ -46,6 +46,23 @@ struct SLC_atom {
         }
         return {0, s, op, SLC_atom_type::OPERATOR};
     }
+
+    std::string to_string() {
+        std::string s;
+        if (type == SLC_atom_type::LAMBDA) {
+            s = "λ";
+        } else if (type == SLC_atom_type::INDEX) {
+            s = "$" + std::to_string(ival);
+        } else if (type == SLC_atom_type::OPERATOR) {
+            s = sval;
+            for (auto arg : oval.consumed) {
+                s += " :" + arg->to_string();
+            }
+        } else if (type == SLC_atom_type::INTEGER) {
+            s = std::to_string(ival);
+        }
+        return s;
+    }
 };
 
 // ordering
@@ -74,16 +91,7 @@ struct SLC_set {
             std::string s;
             if (std::holds_alternative<SLC_atom>(elem)) {
                 SLC_atom atom = std::get<SLC_atom>(elem);
-                auto type = atom.type;
-                if (type == SLC_atom_type::LAMBDA) {
-                    s = "λ";
-                } else if (type == SLC_atom_type::INDEX) {
-                    s = "$" + std::to_string(atom.ival);
-                } else if (type == SLC_atom_type::OPERATOR) {
-                    s = atom.sval;
-                } else if (type == SLC_atom_type::INTEGER) {
-                    s = std::to_string(atom.ival);
-                }
+                s = atom.to_string();
             } else {
                 s = std::get<std::shared_ptr<SLC_set>>(elem)->to_string();
             }

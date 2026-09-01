@@ -345,6 +345,24 @@ struct toposet_parser {
                 changed = true;
                 return substitute(f.a, v.b, 1);
             }
+            // ops consume integer arguments one application at a time and
+            // evaluate once they have the required number
+            const auto *op = std::get_if<SLC_atom>(&v.a);
+            const auto *lit = std::get_if<SLC_atom>(&v.b);
+            if (op && op->type == SLC_atom_type::OPERATOR && op->sval == "+" &&
+                lit && lit->type == SLC_atom_type::INTEGER) {
+                changed = true;
+                SLC_atom next = *op;
+                next.oval.consumed.push_back(std::make_shared<SLC_atom>(*lit));
+                if (static_cast<int>(next.oval.consumed.size()) >=
+                    next.oval.required) {
+                    int sum = 0;
+                    for (const auto &c : next.oval.consumed)
+                        sum += c->ival;
+                    return SLC_element(SLC_atom::integer(sum));
+                }
+                return SLC_element(next);
+            }
             SLC_element fn = reduce_r(v.a, changed);
             if (changed)
                 return make_set({make_set({fn}), v.b});
