@@ -1,3 +1,5 @@
+#pragma once
+
 #include <algorithm>
 #include <memory>
 #include <set>
@@ -7,8 +9,8 @@
 #include <variant>
 #include <vector>
 
-// define recursive SLC set
 struct SLC_set;
+struct SLC_atom;
 
 enum class SLC_atom_type {
     LAMBDA,   // λ
@@ -17,20 +19,32 @@ enum class SLC_atom_type {
     INTEGER,  // int literal for operators
 };
 
+// binary (and even ternary) ops require multiple steps to reduce due to the
+// nature of ulc, therefore we must keep track of what step in the reduction
+// process each op is to evaluate it
+struct SLC_op {
+    int required;
+    std::vector<std::shared_ptr<SLC_atom>> consumed;
+};
+
 // handle difference between slc index and int literal
 struct SLC_atom {
     int ival;
     std::string_view sval;
+    SLC_op oval;
     SLC_atom_type type;
 
-    static SLC_atom lambda() { return {0, "λ", SLC_atom_type::LAMBDA}; }
-    static SLC_atom index(int i) { return {i, {}, SLC_atom_type::INDEX}; }
-    static SLC_atom integer(int i) { return {i, {}, SLC_atom_type::INTEGER}; }
-    static SLC_atom op(std::string_view s) { // eventually im gonna need to
-                                             // implement operator statuses for
-                                             // binary applications i believe
-                                             // :/
-        return {0, s, SLC_atom_type::OPERATOR};
+    static SLC_atom lambda() { return {0, "λ", {}, SLC_atom_type::LAMBDA}; }
+    static SLC_atom index(int i) { return {i, {}, {}, SLC_atom_type::INDEX}; }
+    static SLC_atom integer(int i) {
+        return {i, {}, {}, SLC_atom_type::INTEGER};
+    }
+    static SLC_atom op(std::string_view s) {
+        SLC_op op{};
+        if (s == "+" || s == "-" || s == "*" || s == "/") {
+            op.required = 2;
+        }
+        return {0, s, op, SLC_atom_type::OPERATOR};
     }
 };
 
