@@ -50,9 +50,10 @@ Obviously this doesn't work for sets of equal nesting such as `{{{}}, {{},
 Instead the tokenizer descends into them and they are evaluated as part of the
 program structure.  Each number of these signatures represents the number of a
 choice to be made when walking down a D-ary huffman encoding tree. For the
-specifics of topolang [1] maps to λ and [2, n] maps to natural number n ([3]
-also will map to operators at some point but I haven't implemented this
-yet).  This allows us to construct sets that look like this:
+specifics of topolang [1] maps to λ, [2, n] maps to De Bruijn index n, [3, k]
+maps to one of the operators `+ - * /` and [4, n] maps to the integer literal
+n (evaluating operators is still a work in progress). This allows us to
+construct sets that look like this:
 ```
 {λ, 1}
 ```
